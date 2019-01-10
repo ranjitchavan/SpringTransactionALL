@@ -1,0 +1,4 @@
+jdbc.className:com.mysql.jdbc.Driver
+jdbc.url=jdbc:mysql://localhost:3306/springTx
+jdbc.username=root
+jdbc.password=ranjit

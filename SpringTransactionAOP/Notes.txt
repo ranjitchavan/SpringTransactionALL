@@ -1,0 +1,61 @@
+http://www.studytrails.com/frameworks/spring/spring-transaction-attributes/
+
+
+What are transaction attributes?
+Spring transactions allow setting up the propagation behavior, isolation, timeout and read only settings of a transaction. Before we delve into the details, here are some points that need to be kept in mind
+
+Isolation level and timeout settings get applied only after the transaction starts.
+Not all transaction managers specify all values and may throw exception with some non default values
+Propagation
+PROPAGATION_REQUIRED 
+This attribute tells that the code needs to be run in a transactional context. If a transaction already exists then the code will use it otherwise a new transaction is created. This is the default and mostly widely used transaction setting.
+
+PROPAGATION_SUPPORTS 
+If a transaction exists then the code will use it, but the code does not require a new one. As an example, consider a ticket reservation system. A query to get total seats available can be executed non-transactionally. However, if used within a transaction context it will deduct tickets already selected and reduce them from the total count, and hence may give a better picture. This attribute should be used with care especially when PROPAGATION_REQUIRED or PROPAGATION_REQUIRES_NEW is used within a PROPAGATION_SUPPORTS context.
+
+PROPAGATION_MANDATORY 
+Participates in an existing transaction, however if no transaction context is present then it throws a TransactionRequiredException
+
+PROPAGATION_REQUIRES_NEW 
+Creates a new transaction and if an existing transaction is present then it is suspended. In other words a new transaction is always started. When the new transaction is complete then the original transaction resumes. This transaction type is useful when a sub activity needs to be completed irrespective of the containing transaction. The best example of this is logging. Even if a transaction roll backs you still want to preserve the log statements. Transaction suspension may not work out of the box with all transaction managers, so make sure that the transaction manager supports transaction suspension
+
+PROPAGATION_NOT_SUPPORTED 
+This attribute says that transaction is not supported. In other words the activity needs to be performed non-transactionally. If an existing transaction is present then it is suspended till the activity finishes.
+
+PROPAGATION_NEVER 
+This attributes says that the code cannot be invoked within a transaction. However, unlike PROPAGATION_NOT_SUPPORTED, if an existing transaction is present then an exception will be thrown
+
+PROPAGATION_NESTED 
+The code is executed within a nested transaction if existing transaction is present, if no transaction is present then a new transaction is created. Nested transaction is supported out of the box on only certain transaction managers.
+
+Isolation
+Isolation is a property of a transaction that determines what effect a transaction has on other concurrent transactions. To completely isolate the transaction the database may apply locks to rows or tables. Before we go through the transaction levels, let us look at some problems that occur when transaction 1 reads data that is being modified by transaction 2.
+
+Dirty Reads– Dirty reads occur when transaction 2 reads data that has been modified by transaction 1 but not committed. The problem occurs when transaction 1 rollbacks the transaction, in which case the data read by transaction 2 will be invalid.
+Non Repeatable Reads– Nonrepeatable reads happen when a transaction fires the same query multiple times but receives different data each time for the same query. This may happen when another transaction has modified the rows while this query is in progress.
+Phantom Reads – Phantom reads occur when the collection of rows returned is different when a same query is executed multiple times in a transaction. Phantom reads occur when transaction 2 adds rows to a table between the multiple queries of transaction 1.
+The following isolation levels are supported by spring
+
+ISOLATION_DEFAULT 
+Use the isolation level of the underlying database.
+
+ISOLATION_READ_UNCOMMITTED 
+This is the lowest level of isolation and says that a transaction is allowed to read rows that have been added but not committed by another transaction. This level allows dirty reads, phantom reads and non repeatable reads.
+
+ISOLATION_READ_COMMITTED 
+This level allows multiple transactions on the same data but does not allow uncommited transaction of one transaction to be read by another. This level, therefore, prevents dirty reads but allows phantom reads and nonrepeatable reads. This is the default isolation setting for most database and is supported by most databases.
+
+ISOLATION_REPEATABLE_READ 
+This level ensures that the data set read during a transaction remains constant even if another transaction modifies and commits changes to the data. Therefore if transaction 1 reads 4 rows of data and transaction 2 modifies and commits the fourth row and then transaction 1 reads the four rows again then it does not see the modifications made by transaction 2. (It does not see the changes made in the fourth row by the second transaction). This level prevents dirty reads and non repeatable reads but allows phantom reads.
+
+ISOLATION_SERIALIZABLE 
+This is the highest isolation level. It prevents dirty reads, non repeatable reads and phantom reads. This level prevents the situation when transaction 1 performs a query with a certain where clause and retrieves say four rows, transaction 2 inserts a row that forms part of the same where clause and then transaction 1 reruns the query with the same where clause but still sees only four rows (does not see the row added by the second transaction)
+
+Read Only
+The read only attribute specifies that the transaction is only going to read data from a database. The advantage is that the database may apply certain optimization to the transaction when it is declared to be read only. Since read only attribute comes in action as soon as the transaction starts, it may be applied to only those propagation settings that start a transaction. i.e. PROPAGATION_REQUIRED,PROPAGATION_REQUIRES_NEW and PROPAGATION_NESTED.
+
+Timeout
+Timeout specifies the maximum time allowed for a transaction to run. This may be required since transactions that run for a very long time may unnecessarily hold locks for a long time. When a transaction reaches the timeout period, it is rolled back. Timeout needs to be specified only on propagation settings that start a new transaction
+
+Rollback Rules
+It is also possible to specify that transactions roll back on certain exceptions and do not rollback on other exceptions by specifying the rollback rules.
